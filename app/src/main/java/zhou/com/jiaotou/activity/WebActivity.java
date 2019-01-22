@@ -66,6 +66,7 @@ import zhou.com.jiaotou.util.Md5Util;
 import zhou.com.jiaotou.util.SpUtil;
 import zhou.com.jiaotou.util.StartService;
 import zhou.com.jiaotou.util.ToastUtil;
+import zhou.com.jiaotou.util.WpsUtil;
 
 public class WebActivity extends AppCompatActivity {
 
@@ -244,6 +245,17 @@ public class WebActivity extends AppCompatActivity {
         final DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         long downloadId = downloadManager.enqueue(request);
         Log.d(TAG, "downloadId:{} " + downloadId);
+
+        /**
+         * 如果安装了正规的wps，则使用优先使用正规的wps
+         */
+        if (WpsUtil.checkWps(getApplicationContext())) {
+            WpsUtil.openFile(getApplicationContext(), url);
+            return;
+        }else {
+            ToastUtil.show(getApplicationContext(),"请安装wps软件！");
+        }
+
     }
 
     //ChromeClient
