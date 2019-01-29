@@ -108,6 +108,8 @@ public class WebActivity extends AppCompatActivity {
         mWebView.setWebViewClient(mWebViewClient);//这个一定要设置，要不然不会再本应用中加载
         mWebView.setWebChromeClient(mWebChromeClient);
         mWebView.getSettings().setSupportZoom(true);
+
+
         /**
          * webView白屏问题
          */
@@ -216,10 +218,20 @@ public class WebActivity extends AppCompatActivity {
             Log.i("tag", "contentDisposition=" + contentDisposition);
             Log.i("tag", "mimetype=" + mimetype);
             Log.i("tag", "contentLength=" + contentLength);
+            String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
+            Log.d(TAG, "fileName:{123456}" + fileName);
+
+            if (WpsUtil.checkWps(getApplicationContext())) {
+                WpsUtil.openFile(getApplicationContext(), url);
+                return;
+            }else {
+                ToastUtil.show(getApplicationContext(),"请安装wps软件！");
+            }
+
             /*Uri uri = Uri.parse(url);
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intent);*/
-            downloadBySystem(url, contentDisposition, mimetype);
+            //downloadBySystem(url, contentDisposition, mimetype);
         }
     }
 
