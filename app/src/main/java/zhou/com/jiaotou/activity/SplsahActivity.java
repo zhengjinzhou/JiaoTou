@@ -91,6 +91,7 @@ public class SplsahActivity extends AppCompatActivity implements SelectContract.
                         }else {
                             ToastUtil.show(getApplicationContext(),loginBean.getMessage());
                             startActivity(new Intent(getApplicationContext(),LoginActivity.class));
+                            finish();
                         }
                     }
                 });

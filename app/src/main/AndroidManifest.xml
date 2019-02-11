@@ -191,7 +191,8 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name=".jgts.JgtsActivity"></activity>
+        <activity android:name=".jgts.JgtsActivity"/>
+
     </application>
 
 </manifest>

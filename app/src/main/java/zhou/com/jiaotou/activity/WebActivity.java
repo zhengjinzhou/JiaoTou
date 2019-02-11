@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.support.annotation.RequiresApi;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -57,11 +58,15 @@ import zhou.com.jiaotou.base.Constant;
 import zhou.com.jiaotou.bean.AppInfoBean;
 import zhou.com.jiaotou.bean.NumBean;
 import zhou.com.jiaotou.bean.SelectBean;
+import zhou.com.jiaotou.bean.ShareBean;
+import zhou.com.jiaotou.bean.openfileBean;
 import zhou.com.jiaotou.contract.WebContract;
 import zhou.com.jiaotou.presenter.WebPresenter;
 import zhou.com.jiaotou.util.AppManager;
 import zhou.com.jiaotou.util.DateUtil;
+import zhou.com.jiaotou.util.DownloadUtil;
 import zhou.com.jiaotou.util.JsonConvert;
+import zhou.com.jiaotou.util.LoadDialog;
 import zhou.com.jiaotou.util.Md5Util;
 import zhou.com.jiaotou.util.SpUtil;
 import zhou.com.jiaotou.util.StartService;
@@ -83,13 +88,15 @@ public class WebActivity extends AppCompatActivity {
     private long downloadId;
     private int startX;
     private int scrollSize = 350;
-
+    private LoadDialog loadDialog;
 
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web);
+
+        loadDialog = new LoadDialog(this, true, "正在下载...");
 
         startService(new Intent(getApplicationContext(),StartService.class));
 
@@ -120,53 +127,14 @@ public class WebActivity extends AppCompatActivity {
         /**
          * 设置别名
          */
-        JPushInterface.setAlias(getApplicationContext(),0,appInfoBean.getSNID()+"_"+selectBean.getUser());
+        //JPushInterface.setAlias(getApplicationContext(),0,appInfoBean.getSNID()+"_"+selectBean.getUser());
 
         String baseUrl = appInfoBean.getDMSPhoneURL();
 
         //拼合成主页面地址
         String url = baseUrl+"Login/QuickLogin.aspx" +"?UserID=" + selectBean.getUser() + Constant.ACCOUNT_SysID+ "&From=APP";
         mWebView.loadUrl(url);
-        /*String we = SpUtil.getString(this, "we", "");
-        if (we.equals("123")){
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mWebView.loadUrl("http://221.4.134.50:8081/DMS_Phone/FileMan/SWMan/SWHandleIndex.aspx");
-                    SpUtil.remove(getApplicationContext(),"we");
-                }
-            },1000);
-        }*/
-
         mWebView.setDownloadListener(new MyWebViewDownLoadListener());
-
-        /*mWebView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        startX = (int) event.getX();
-                        break;
-
-                    case MotionEvent.ACTION_UP:
-                        Log.d(TAG, "onTouch: "+startX);
-                        if (startX>8){
-                            break;
-                        }
-                        int endX = (int) event.getX();
-                        if(endX>startX && mWebView.canGoBack() && endX-startX>scrollSize){
-                            mWebView.goBack();
-                        }else if(endX<startX &&mWebView.canGoForward() && startX-endX>scrollSize){
-                           // mWebView.goForward();
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                return false;
-            }
-        });*/
-
         initUpdate();
     }
 
@@ -220,18 +188,7 @@ public class WebActivity extends AppCompatActivity {
             Log.i("tag", "contentLength=" + contentLength);
             String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
             Log.d(TAG, "fileName:{123456}" + fileName);
-
-            if (WpsUtil.checkWps(getApplicationContext())) {
-                WpsUtil.openFile(getApplicationContext(), url);
-                return;
-            }else {
-                ToastUtil.show(getApplicationContext(),"请安装wps软件！");
-            }
-
-            /*Uri uri = Uri.parse(url);
-            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-            startActivity(intent);*/
-            //downloadBySystem(url, contentDisposition, mimetype);
+            downloadBySystem(url, contentDisposition, mimetype);
         }
     }
 
@@ -257,16 +214,6 @@ public class WebActivity extends AppCompatActivity {
         final DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         long downloadId = downloadManager.enqueue(request);
         Log.d(TAG, "downloadId:{} " + downloadId);
-
-        /**
-         * 如果安装了正规的wps，则使用优先使用正规的wps
-         */
-        if (WpsUtil.checkWps(getApplicationContext())) {
-            WpsUtil.openFile(getApplicationContext(), url);
-            return;
-        }else {
-            ToastUtil.show(getApplicationContext(),"请安装wps软件！");
-        }
 
     }
 
@@ -342,6 +289,23 @@ public class WebActivity extends AppCompatActivity {
             }.getType(), "type");
             if (!TextUtils.isEmpty(mType)) {
                 switch (mType) {
+                    //分享
+                    case "openfile":
+                        Gson g = new Gson();
+                        openfileBean openfileBean = g.fromJson(json, openfileBean.class);
+                        if (WpsUtil.checkWps(getApplicationContext())) {
+                            WpsUtil.openFile(getApplicationContext(), openfileBean.getPath());
+                            return;
+                        }else {
+                            ToastUtil.show(getApplicationContext(),"请安装wps软件！");
+                        }
+                        break;
+                    case "share":
+                        Gson gson1 = new Gson();
+                        ShareBean shareBean = gson1.fromJson(json, ShareBean.class);
+                        downFile(shareBean.getPath(),shareBean.getName());
+                        break;
+
                     case "phonebook":
                         //js不对，调不到通讯录,所以省略
                         // MailActivity.newInstance(WebActivity.this);
@@ -374,19 +338,71 @@ public class WebActivity extends AppCompatActivity {
         }
     }
 
+    private static void checkFileUriExposure() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
+            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+            StrictMode.setVmPolicy(builder.build());
+            builder.detectFileUriExposure();
+        }
+    }
+
+    public void downFile(String url, final String fileName) {
+
+        DownloadUtil.get().download(url, Environment.getExternalStorageDirectory().getAbsolutePath(), fileName, new DownloadUtil.OnDownloadListener() {
+            @Override
+            public void onDownloadSuccess(File file) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        loadDialog.dismiss();
+                    }
+                });
+
+                Log.d("下载", "onDownloadSuccess: ");
+                //下载完成进行相关逻辑操作
+                checkFileUriExposure();
+
+                String path = Environment.getExternalStorageDirectory().getPath().toString() + "/" + fileName;
+
+                Intent share = new Intent(Intent.ACTION_SEND);
+                share.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                share.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(path)));  //传输图片或者文件 采用流的方式
+                share.setType("*/*");   //分享文件
+                startActivity(Intent.createChooser(share, fileName));
+
+            }
+
+            @Override
+            public void onDownloading(int progress) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        loadDialog.show();
+                    }
+                });
+                Log.d("下载", "onDownloading: "+progress);
+            }
+
+            @Override
+            public void onDownloadFailed(Exception e) {
+                Log.d("下载", "onDownloadFailed: "+e.getMessage());
+                //下载异常进行相关提示操作
+            }
+        });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         Log.d("-----------------------", "onResume: " + LastUrl);
+        /** 注册下载完成接收广播 **/
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         if (null != mWebView) {
             mWebView.destroy();
         }
     }
-
 }
