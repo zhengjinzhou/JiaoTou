@@ -153,7 +153,7 @@ public class WebActivity extends AppCompatActivity {
             Log.d(TAG, "initUpdate: "+versionCode);
             final AppInfoBean appInfoBean = (AppInfoBean) SpUtil.getObject(this, Constant.AppInfo, AppInfoBean.class);
             if (appInfoBean==null)return;
-            if (versionCode > appInfoBean.getAppVersion()){
+            if (versionCode < appInfoBean.getAppVersion()){
                 android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
                 builder.setTitle("版本更新");
                 builder.setMessage(appInfoBean.getUpdateMemo());
