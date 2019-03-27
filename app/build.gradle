@@ -6,8 +6,8 @@ android {
         applicationId "zhou.com.jiaotou"
         minSdkVersion 15
         targetSdkVersion 27
-        versionCode 4
-        versionName "1.0.7"
+        versionCode 5
+        versionName "1.0.8"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

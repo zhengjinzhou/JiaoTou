@@ -51,11 +51,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Set;
 
 import cn.jpush.android.api.JPushInterface;
+import cn.jpush.android.api.TagAliasCallback;
 import zhou.com.jiaotou.R;
 import zhou.com.jiaotou.base.Constant;
 import zhou.com.jiaotou.bean.AppInfoBean;
+import zhou.com.jiaotou.bean.JgUrlBean;
 import zhou.com.jiaotou.bean.NumBean;
 import zhou.com.jiaotou.bean.SelectBean;
 import zhou.com.jiaotou.bean.ShareBean;
@@ -96,7 +99,7 @@ public class WebActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web);
 
-        loadDialog = new LoadDialog(this, true, "正在下载...");
+        loadDialog = new LoadDialog(this, true, "正在加载...");
 
         startService(new Intent(getApplicationContext(),StartService.class));
 
@@ -127,13 +130,49 @@ public class WebActivity extends AppCompatActivity {
         /**
          * 设置别名
          */
-        //JPushInterface.setAlias(getApplicationContext(),0,appInfoBean.getSNID()+"_"+selectBean.getUser());
+        //JPushInterface.setAlias(this,0,appInfoBean.getSNID()+"_"+selectBean.getUser());
+        JPushInterface.setAlias(this, appInfoBean.getSNID() + "_" + selectBean.getUser(), new TagAliasCallback() {
+            @Override
+            public void gotResult(int i, String s, Set<String> set) {
+                Log.d(TAG, i+"gotResult: "+s);
+            }
+        });
 
         String baseUrl = appInfoBean.getDMSPhoneURL();
 
         //拼合成主页面地址
-        String url = baseUrl+"Login/QuickLogin.aspx" +"?UserID=" + selectBean.getUser() + Constant.ACCOUNT_SysID+ "&From=APP";
+        final String url = baseUrl+"Login/QuickLogin.aspx" +"?UserID=" + selectBean.getUser() + Constant.ACCOUNT_SysID+ "&From=APP";
+
         mWebView.loadUrl(url);
+        /**
+         * 从极光那里获取的数据
+         */
+        Intent intent = getIntent();
+        String JgTitle = null;
+        String JgContent = null;
+        String JgUrl = null;
+        if (null != intent) {
+            Bundle bundle = getIntent().getExtras();
+            if(bundle!=null){
+                JgTitle = bundle.getString(JPushInterface.EXTRA_NOTIFICATION_TITLE);
+                JgContent = bundle.getString(JPushInterface.EXTRA_ALERT);
+                Log.d("11111", "onCreate: "+bundle.getString(JPushInterface.EXTRA_EXTRA));
+                JgUrl = bundle.getString(JPushInterface.EXTRA_EXTRA);
+            }
+            Gson gson = new Gson();
+            JgUrlBean jgUrlBean = gson.fromJson(bundle.getString(JPushInterface.EXTRA_EXTRA), JgUrlBean.class);
+            if (jgUrlBean!=null){
+                final String urlNew = jgUrlBean.getUrl();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        mWebView.loadUrl(urlNew);
+                    }
+                },500);
+                Log.d("打印", "onCreate: "+jgUrlBean.getUrl());
+                Log.d("获取到的信息", "onCreate: "+"Title : " + JgTitle + "  " + "Content : " + JgContent+"网址"+ url);
+            }
+        }
         mWebView.setDownloadListener(new MyWebViewDownLoadListener());
         initUpdate();
     }
@@ -150,13 +189,14 @@ public class WebActivity extends AppCompatActivity {
         try {
             PackageInfo packageInfo = getApplicationContext().getPackageManager().getPackageInfo(getPackageName(), 0);
             int versionCode = packageInfo.versionCode;
+            String packageName = packageInfo.versionName;
             Log.d(TAG, "initUpdate: "+versionCode);
             final AppInfoBean appInfoBean = (AppInfoBean) SpUtil.getObject(this, Constant.AppInfo, AppInfoBean.class);
             if (appInfoBean==null)return;
             if (versionCode < appInfoBean.getAppVersion()){
                 android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
                 builder.setTitle("版本更新");
-                builder.setMessage(appInfoBean.getUpdateMemo());
+                builder.setMessage("当前版本"+packageName+",低于1.0.7(不包括)请卸载应用然后扫码安装\n"+appInfoBean.getUpdateMemo());
                 builder.setPositiveButton("更新", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -307,8 +347,6 @@ public class WebActivity extends AppCompatActivity {
                         break;
 
                     case "phonebook":
-                        //js不对，调不到通讯录,所以省略
-                        // MailActivity.newInstance(WebActivity.this);
                         mPopupWindow.dismiss();
                         break;
                     case "logout":
@@ -403,6 +441,7 @@ public class WebActivity extends AppCompatActivity {
         super.onDestroy();
         if (null != mWebView) {
             mWebView.destroy();
+            JPushInterface.deleteAlias(getApplicationContext(),0);
         }
     }
 }

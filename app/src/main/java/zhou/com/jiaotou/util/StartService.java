@@ -12,6 +12,7 @@ import android.util.Log;
 import com.google.gson.Gson;
 
 import java.io.IOException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -74,23 +75,21 @@ public class StartService extends Service implements Runnable {
                 //每10秒钟进行一次输出
                 Thread.sleep(10000);
                 //Toast.makeText(getApplicationContext(),"服务启动"+i++,Toast.LENGTH_LONG).show();
-
-
                 SelectBean selectBean = (SelectBean) SpUtil.getObject(this, Constant.Account, SelectBean.class);
                 if (selectBean==null)
                     return ;
                 String user = selectBean.getUser();
-                String url = "http://221.4.134.50:8081/oasystem2018/Handlers/DMS_Handler.ashx";
-                String time = DateUtil.lineHDate(new Date());
-
+                String url = "http://221.4.134.50:8081/oasystem2018/Handlers/dms_handler.ashx";
+                String time = DateUtil.jiaotouDate();
+                Log.d("使用时间", "run: "+time);
                 String JPsd = time +user+"WanveDMSOA"+time;
                 String Signature = Md5Util.encoder(JPsd);
-                Log.d("", "run: ---------------------------"+time);
                 OkHttpClient okHttpClient = new OkHttpClient();
-                FormBody formBody = new FormBody.Builder().add("Action", "GetPhoneAppNum")
+                FormBody formBody = new FormBody.Builder()
+                        .add("Action", "GetPhoneAppNum")
                         .add("UserID", user)
                         .add("Signature", Signature)
-                        .add("Timestamp", time)
+                        .add("TimeStamp", time)
                         .build();
                 Request request = new Request.Builder().url(url).post(formBody).build();
                 Call call = okHttpClient.newCall(request);
@@ -108,6 +107,7 @@ public class StartService extends Service implements Runnable {
                         NumBean numBean = gson.fromJson(string, NumBean.class);
                         BadgeNumUtil.setBadgeNum(getApplicationContext(),numBean.getHandleCount());
                         BadgeNumUtil.setBadgeCount(getApplicationContext(),numBean.getHandleCount());
+
                     }
                 });
 

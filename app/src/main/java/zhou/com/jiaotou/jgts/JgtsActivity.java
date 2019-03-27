@@ -13,10 +13,13 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
+
 import java.util.Set;
 
 import cn.jpush.android.api.JPushInterface;
 import zhou.com.jiaotou.R;
+import zhou.com.jiaotou.bean.JgUrlBean;
 
 public class JgtsActivity extends AppCompatActivity {
 
@@ -34,9 +37,12 @@ public class JgtsActivity extends AppCompatActivity {
             if(bundle!=null){
                 title = bundle.getString(JPushInterface.EXTRA_NOTIFICATION_TITLE);
                 content = bundle.getString(JPushInterface.EXTRA_ALERT);
-
                 Log.d("11111", "onCreate: "+bundle.getString(JPushInterface.EXTRA_EXTRA));
+                url = bundle.getString(JPushInterface.EXTRA_EXTRA);
             }
+            Gson gson = new Gson();
+            JgUrlBean jgUrlBean = gson.fromJson(bundle.getString(JPushInterface.EXTRA_EXTRA), JgUrlBean.class);
+            Log.d("打印", "onCreate: "+jgUrlBean.getUrl());
             Log.d("获取到的信息", "onCreate: "+"Title : " + title + "  " + "Content : " + content+"123"+ url);
         }
         //addContentView(tv, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));

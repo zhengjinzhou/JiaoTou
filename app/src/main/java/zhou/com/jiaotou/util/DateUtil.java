@@ -1,7 +1,10 @@
 package zhou.com.jiaotou.util;
 
+import android.util.Log;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 
 /**
@@ -77,6 +80,55 @@ public class DateUtil {
         SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmss");
         String time = format.format(date);
         return time;
+    }
+
+    //专门给交投请求角标减去一分钟的方法
+    public static String jiaotouDate(){
+        Calendar cal = Calendar.getInstance();
+        String monthString = "";
+        String dayString = "";
+        String hourString = "";
+        String minuteString = "";
+        String secondString = "";
+        String sumString = "";
+        int year = cal.get(Calendar.YEAR);//获取年份
+        int month=cal.get(Calendar.MONTH)+1;//获取月份
+        int day=cal.get(Calendar.DATE);//获取日
+        int hour=cal.get(Calendar.HOUR_OF_DAY);//小时
+        int minute=cal.get(Calendar.MINUTE)-1;//分
+        int second=cal.get(Calendar.SECOND);//秒
+
+
+        if (month<10){
+            monthString = "0"+month;
+        }else {
+            monthString = ""+month;
+        }
+        if (day<10){
+            dayString = "0"+day;
+        }else {
+            dayString = ""+day;
+        }
+        if (hour<10){
+            hourString = "0"+hour;
+        }else {
+            hourString = ""+hour;
+        }
+        if (minute<0){
+            minuteString = "00";
+        }
+        else if (0<minute && minute<10){
+            minuteString = "0"+minute;
+        }else {
+            minuteString = ""+minute;
+        }
+        if (second<10){
+            secondString = "0"+second;
+        }else {
+            secondString = ""+second;
+        }
+        sumString = year+monthString+dayString+hourString+minuteString+secondString;
+        return sumString;
     }
 
 }

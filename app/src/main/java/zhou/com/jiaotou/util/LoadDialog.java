@@ -18,7 +18,7 @@ import zhou.com.jiaotou.R;
  * Created by zhou on 2017/10/22.
  */
 
-public class LoadDialog extends Dialog{
+public class LoadDialog extends Dialog {
     /**
 
      * LoadDialog
@@ -55,7 +55,7 @@ public class LoadDialog extends Dialog{
         super(context);
         this.cancelable = cancelable;
         this.tipMsg = tipMsg;
-        this.getContext().setTheme(android.R.style.Theme_DeviceDefault_Dialog_NoActionBar_MinWidth);
+        //this.getContext().setTheme(android.R.style.Theme_DeviceDefault_Dialog_NoActionBar_MinWidth);
         setContentView(R.layout.dialog_layout);
         // 必须放在加载布局后
         setparams();

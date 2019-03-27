@@ -15,6 +15,7 @@ import java.util.Iterator;
 
 import cn.jpush.android.api.JPushInterface;
 import zhou.com.jiaotou.activity.SplsahActivity;
+import zhou.com.jiaotou.activity.WebActivity;
 import zhou.com.jiaotou.base.App;
 import zhou.com.jiaotou.base.Constant;
 import zhou.com.jiaotou.util.SpUtil;
@@ -53,7 +54,7 @@ public class MyReceiver extends BroadcastReceiver {
                 Log.d(TAG, "[MyReceiver6] 用户点击打开了通知");
 
                 //打开自定义的Activity
-                Intent i = new Intent(context, JgtsActivity.class);
+                Intent i = new Intent(context, WebActivity.class);
                 i.putExtras(bundle);
                 //i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP );
